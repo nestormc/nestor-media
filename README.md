@@ -24,6 +24,11 @@ Internals
 * file mimetype
 * ffprobe data
 
+`media:removed`: dispatched when a file was removed somewhere in a watched directory, with the full path to the removed file as an argument.
+
+
+
+
 
 
 
