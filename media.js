@@ -3,10 +3,14 @@
 
 var chokidar = require("chokidar"),
 	ffprobe = require("node-ffprobe"),
-	mongoose = require("mongoose"),
 	when = require("when"),
 	spawn = require("child_process").spawn;
 
+
+
+/*!
+ * Scheduler processors registering helper
+ */
 
 function registerProcessors(intents, logger) {
 	function register(op, processor) {
@@ -73,9 +77,21 @@ function registerProcessors(intents, logger) {
 }
 
 
-exports.init = function(nestor) {
+
+/*!
+ * Plugin interface
+ */
+
+function mediaPlugin(nestor) {
 	var intents = nestor.intents;
 	var logger = nestor.logger;
+	var mongoose = nestor.mongoose;
+	var rest = nestor.rest;
+
+
+	/*!
+	 * Setup chokidar watcher
+	 */
 
 	var watcher = chokidar.watch([], { persistent: false });
 
@@ -93,6 +109,11 @@ exports.init = function(nestor) {
 			intents.emit("media:removed", path);
 		});
 
+
+	/*!
+	 * WatchedDir model
+	 */
+
 	var WatchedDirSchema = new mongoose.Schema(
 		{ path: { type: String, unique: true } },
 		{ versionKey: false, id: false }
@@ -106,10 +127,18 @@ exports.init = function(nestor) {
 	});
 
 	var WatchedDir = mongoose.model("watcheddir", WatchedDirSchema);
+
+
+	/*!
+	 * REST resource
+	 */
 	
-	intents.on("nestor:rest", function(rest) {
-		rest.mongoose("watchedDirs", WatchedDir);
-	});
+	rest.mongoose("watchedDirs", WatchedDir);
+
+
+	/*!
+	 * Startup handler
+	 */
 
 	intents.on("nestor:startup", function() {
 		intents.emit("nestor:right", {
@@ -122,7 +151,7 @@ exports.init = function(nestor) {
 
 		WatchedDir.find({}, function(err, docs) {
 			if (err) {
-				nestor.logger.error("Cannot walk watched directories: %s", err.message);
+				logger.error("Cannot walk watched directories: %s", err.message);
 			} else {
 				docs.forEach(function(doc) {
 					watcher.add(doc.path);
@@ -130,41 +159,11 @@ exports.init = function(nestor) {
 			}
 		});
 	});
+}
 
-	/* Add watched dirs from config if they don't exist yet */
-	if (nestor.config.media.watch) {
-		return when.map(nestor.config.media.watch, function(dir) {
-			var deferred = when.defer();
-
-			WatchedDir.findOne({ path: dir }, function(err, w) {
-				if (!w) {
-					nestor.logger.info("Adding %s to watched directories", dir);
-
-					var wdir = new WatchedDir({ path : dir });
-					
-					// Don't watch directory yet, wait for nestor:startup
-					wdir.noWatch = true;
-
-					wdir.save(function(err) {
-						if (err) {
-							deferred.reject(err);
-						} else {
-							deferred.resolve();
-						}
-					});
-				} else {
-					deferred.resolve();
-				}
-			});
-
-			return deferred.promise;
-		});
-	} else {
-		return when.resolve();
-	}
-};
-
-exports.manifest = {
+mediaPlugin.manifest = {
 	name: "media",
 	description: "Media scanning dispatcher"
 };
+
+module.exports = mediaPlugin;

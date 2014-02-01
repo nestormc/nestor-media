@@ -1,8 +1,8 @@
 {
   "name": "nestor-media",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Media scanner plugin for nestor",
-  "main": "index.js",
+  "main": "media.js",
   "repository": {
     "type": "git",
     "url": "git@github.com:nestormc/nestor-media.git"
@@ -11,8 +11,6 @@
   "license": "MIT",
   "dependencies": {
     "chokidar": "*",
-    "mongoose": "*",
-    "nestor-plugin-registry": "*",
     "node-ffprobe": "njoyard/node-ffprobe",
     "when": "*"
   }
