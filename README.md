@@ -1,12 +1,12 @@
 Media scanning plugin for nestor
---------------------------------
+================================
 
 This plugin adds a media scanning facility to nestor, with multiple watched directories.
 
 It should not be used directly, it will be automatically added by other plugins (nestor-music and nestor-video).
 
 Internals
-=========
+---------
 
 ### Models
 
