@@ -1,0 +1,1 @@
+Media scanning plugin for nestor
