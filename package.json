@@ -12,6 +12,7 @@
   "dependencies": {
     "chokidar": "*",
     "mongoose": "*",
+    "nestor-plugin-registry": "*",
     "node-ffprobe": "njoyard/node-ffprobe",
     "when": "*"
   }
