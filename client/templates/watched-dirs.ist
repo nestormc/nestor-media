@@ -1,0 +1,15 @@
+ul.content-list
+	@if dirs.length === 0
+		"No watched directories"
+	@each dirs
+		li.list-item
+			.list-item-status
+				"Status"
+
+			.list-item-description
+				.list-item-title "{{ path }}"
+
+			.list-item-actions
+				a.action-with-icon[title=Remove directory][href=#!media/remove/{{ _id }}]
+					@svg "images/cancel.svg"
+					"Remove directory"
