@@ -164,7 +164,11 @@ function mediaPlugin(nestor) {
 mediaPlugin.manifest = {
 	name: "media",
 	description: "Media scanning dispatcher",
-	clientDir: __dirname + "/client"
+	client: {
+		build: {
+			base: __dirname + "/client"
+		}
+	}
 };
 
 module.exports = mediaPlugin;
