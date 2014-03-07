@@ -97,14 +97,17 @@ function mediaPlugin(nestor) {
 
 	watcher
 		.on("add", function(path) {
+			markUpdate(path);
 			logger.debug("Added: %s", path);
 			intents.emit("nestor:scheduler:enqueue", "media:analyze", path);
 		})
 		.on("change", function(path) {
+			markUpdate(path);
 			logger.debug("Changed: %s", path);
 			intents.emit("nestor:scheduler:enqueue", "media:analyze", path);
 		})
 		.on("unlink", function(path) {
+			markUpdate(path);
 			logger.debug("Removed: %s", path);
 			intents.emit("media:removed", path);
 		});
@@ -115,7 +118,10 @@ function mediaPlugin(nestor) {
 	 */
 
 	var WatchedDirSchema = new mongoose.Schema(
-		{ path: { type: String, unique: true } },
+		{
+			path: { type: String, unique: true },
+			lastUpdate: Date
+		},
 		{ versionKey: false, id: false }
 	);
 
@@ -123,10 +129,22 @@ function mediaPlugin(nestor) {
 		if (!this.noWatch)
 			watcher.add(this.path);
 
+		this.lastUpdate = new Date();
 		next();
 	});
 
 	var WatchedDir = mongoose.model("watcheddir", WatchedDirSchema);
+
+	function markUpdate(path) {
+		WatchedDir.find({}, function(err, dirs) {
+			dirs.forEach(function(dir) {
+				if (path.indexOf(dir.path) === 0) {
+					dir.lastUpdate = new Date();
+					dir.save();
+				}
+			});
+		});
+	}
 
 
 	/*!

@@ -4,7 +4,7 @@ ul.content-list
 	@each dirs
 		li.list-item
 			.list-item-status
-				"Status"
+				"Last updated {{ lastUpdate }}"
 
 			.list-item-description
 				.list-item-title "{{ path }}"

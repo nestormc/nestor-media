@@ -2,8 +2,8 @@
 /*global define */
 
 define(
-["ui", "router", "resource", "ist!templates/watched-dirs"],
-function(ui, router, resource, wdTemplate) {
+["ui", "router", "resource", "moment", "ist!templates/watched-dirs"],
+function(ui, router, resource, moment, wdTemplate) {
 	"use strict";
 
 	ui.started.add(function() {
@@ -16,6 +16,10 @@ function(ui, router, resource, wdTemplate) {
 
 		function updateSettings() {
 			return resource.get().then(function(dirs) {
+				dirs._items.forEach(function(dir) {
+					dir.lastUpdate = moment(dir.lastUpdate).fromNow();
+				});
+
 				wdRendered.update({ dirs: dirs._items });
 			});
 		}
