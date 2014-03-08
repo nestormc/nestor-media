@@ -7,6 +7,8 @@ var chokidar = require("chokidar"),
 	spawn = require("child_process").spawn;
 
 
+var DIR_UPDATE_THROTTLE = 1000;
+
 
 /*!
  * Scheduler processors registering helper
@@ -87,30 +89,58 @@ function mediaPlugin(nestor) {
 	var logger = nestor.logger;
 	var mongoose = nestor.mongoose;
 	var rest = nestor.rest;
+	var misc = nestor.misc;
 
 
 	/*!
-	 * Setup chokidar watcher
+	 * Setup chokidar watchers
 	 */
 
-	var watcher = chokidar.watch([], { persistent: false });
+	var watchers = {};
 
-	watcher
-		.on("add", function(path) {
-			markUpdate(path);
-			logger.debug("Added: %s", path);
-			intents.emit("nestor:scheduler:enqueue", "media:analyze", path);
-		})
-		.on("change", function(path) {
-			markUpdate(path);
-			logger.debug("Changed: %s", path);
-			intents.emit("nestor:scheduler:enqueue", "media:analyze", path);
-		})
-		.on("unlink", function(path) {
-			markUpdate(path);
-			logger.debug("Removed: %s", path);
-			intents.emit("media:removed", path);
-		});
+	function addWatcher(path) {
+		if (path in watchers) {
+			return;
+		}
+
+		var watcher = chokidar.watch([path], { persistent: false });
+
+		var markUpdate = misc.throttled(function() {
+			WatchedDir.findOneAndUpdate({ path: path }, { lastUpdate: new Date() }, function(err) {
+				if (err) {
+					logger.warn("Could not update directory %s: %s", path, err.message);
+				}
+			});
+		}, DIR_UPDATE_THROTTLE);
+
+		watcher
+			.on("add", function(changedpath) {
+				markUpdate();
+				logger.debug("Added: %s", changedpath);
+				intents.emit("nestor:scheduler:enqueue", "media:analyze", changedpath);
+			})
+			.on("change", function(changedpath) {
+				markUpdate();
+				logger.debug("Changed: %s", changedpath);
+				intents.emit("nestor:scheduler:enqueue", "media:analyze", changedpath);
+			})
+			.on("unlink", function(changedpath) {
+				markUpdate();
+				logger.debug("Removed: %s", changedpath);
+				intents.emit("media:removed", changedpath);
+			});
+
+		watchers[path] = watcher;
+	}
+
+	function removeWatcher(path) {
+		if (!(path in watchers)) {
+			return;
+		}
+
+		watchers[path].close();
+		delete watchers[path];
+	}
 
 
 	/*!
@@ -125,26 +155,15 @@ function mediaPlugin(nestor) {
 		{ versionKey: false, id: false }
 	);
 
-	WatchedDirSchema.pre("save", function(next) {
-		if (!this.noWatch)
-			watcher.add(this.path);
+	WatchedDirSchema.post("save", function() {
+		addWatcher(this.path);
+	});
 
-		this.lastUpdate = new Date();
-		next();
+	WatchedDirSchema.post("remove", function() {
+		removeWatcher(this.path);
 	});
 
 	var WatchedDir = mongoose.model("watcheddir", WatchedDirSchema);
-
-	function markUpdate(path) {
-		WatchedDir.find({}, function(err, dirs) {
-			dirs.forEach(function(dir) {
-				if (path.indexOf(dir.path) === 0) {
-					dir.lastUpdate = new Date();
-					dir.save();
-				}
-			});
-		});
-	}
 
 
 	/*!
@@ -159,6 +178,8 @@ function mediaPlugin(nestor) {
 	 */
 
 	intents.on("nestor:startup", function() {
+		//intents.emit("nestor:http:watchable", "watcheddirs", WatchedDir);
+
 		intents.emit("nestor:right", {
 			name: "watched-dirs",
 			route: "/watchedDirs*",
@@ -167,12 +188,13 @@ function mediaPlugin(nestor) {
 
 		registerProcessors(intents, logger);
 
+		// Start watching directories
 		WatchedDir.find({}, function(err, docs) {
 			if (err) {
 				logger.error("Cannot walk watched directories: %s", err.message);
 			} else {
 				docs.forEach(function(doc) {
-					watcher.add(doc.path);
+					addWatcher(doc.path);
 				});
 			}
 		});
