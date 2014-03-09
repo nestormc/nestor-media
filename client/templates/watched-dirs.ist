@@ -10,6 +10,6 @@ ul.content-list
 				.list-item-title "{{ path }}"
 
 			.list-item-actions
-				a.action-with-icon[title=Remove directory][href=#!media/remove/{{ _id }}]
+				a.action-with-icon[title=Remove directory][href={{ uri("#!media/remove-directory/%s", path) }}]
 					@svg "images/cancel.svg"
 					"Remove directory"

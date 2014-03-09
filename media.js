@@ -1,7 +1,9 @@
 /*jshint node:true */
 "use strict";
 
-var chokidar = require("chokidar"),
+var fs = require("fs"),
+	path = require("path"),
+	chokidar = require("chokidar"),
 	ffprobe = require("node-ffprobe"),
 	when = require("when"),
 	spawn = require("child_process").spawn;
@@ -167,10 +169,59 @@ function mediaPlugin(nestor) {
 
 
 	/*!
-	 * REST resource
+	 * REST resources
 	 */
 	
-	rest.mongoose("watchedDirs", WatchedDir);
+	rest.mongoose("watchedDirs", WatchedDir)
+		.set("key", "path");
+
+	rest.resource("subdirs/:root")
+		.get(function(req, cb) {
+			var root = req.params.root;
+			var results = [];
+			var nbstats = 0;
+
+			var sent = false;
+			function done(err) {
+				if (!sent) {
+					sent = true;
+					if (err) {
+						cb(err);
+					} else {
+						cb(null, results.sort().map(function(dir) {
+							return {
+								name: dir,
+								path: path.join(root, dir)
+							};
+						}));
+					}
+				}
+			}
+
+			fs.readdir(root, function(err, files) {
+				if (err) {
+					cb(err);
+				} else {
+					files.forEach(function(file) {
+						fs.stat(path.join(root, file), function(err, stat) {
+							if (err) {
+								done(err);
+								return;
+							}
+
+							if (stat.isDirectory() && file[0] !== ".") {
+								results.push(file);
+							}
+
+							nbstats++;
+							if (nbstats === files.length) {
+								done();
+							}
+						});
+					});
+				}
+			});
+		});
 
 
 	/*!
@@ -205,6 +256,7 @@ mediaPlugin.manifest = {
 	name: "media",
 	description: "Media scanning dispatcher",
 	client: {
+		public: __dirname + "/client/public",
 		build: {
 			base: __dirname + "/client"
 		}
