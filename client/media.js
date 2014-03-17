@@ -10,7 +10,8 @@ function(ui, router, resource, moment, ist, wdTemplate, adTemplate) {
 		/* Setup settings pane */
 
 		var wdView = ui.view("watched-dirs");
-		var wdRendered = wdTemplate.render({ dirs: [] });
+		var wdContext = { dirs: [] };
+		var wdRendered = wdTemplate.render(wdContext);
 
 		wdView.appendChild(wdRendered);
 
@@ -20,7 +21,8 @@ function(ui, router, resource, moment, ist, wdTemplate, adTemplate) {
 					dir.lastUpdate = moment(dir.lastUpdate).fromNow();
 				});
 
-				wdRendered.update({ dirs: dirs._items });
+				wdContext.dirs = dirs._items;
+				wdRendered.update();
 			});
 		}
 
