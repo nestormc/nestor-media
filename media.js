@@ -9,7 +9,8 @@ var fs = require("fs"),
 	spawn = require("child_process").spawn;
 
 
-var DIR_UPDATE_THROTTLE = 1000;
+var DIR_UPDATE_THROTTLE = 2000;
+var FILE_EVENT_THROTTLE = 2000;
 
 
 /*!
@@ -39,7 +40,7 @@ function registerProcessors(intents, logger) {
 		}
 
 		var d = when.defer();
-		
+
 		child.stdout.on("data", function(data) {
 			mime += data.toString();
 		});
@@ -72,7 +73,7 @@ function registerProcessors(intents, logger) {
 				logger.debug("Dispatching media:file intent for %s", path);
 				intents.emit("media:file", path, data.mime, metadata);
 			}
-			
+
 			d.resolve();
 		});
 
@@ -99,6 +100,27 @@ function mediaPlugin(nestor) {
 	 */
 
 	var watchers = {};
+	var pending = {};
+
+
+	// Don't handle changes until there is no change on the same path
+	// for at least FILE_EVENT_THROTTLE millisecs
+	function signal(change, path) {
+		if (path in pending) {
+			clearTimeout(pending[path]);
+		}
+
+		pending[path] = setTimeout(function() {
+			delete pending[path];
+			if (change === "unlink") {
+				intents.emit("media:removed", path);
+			} else {
+				intents.emit("nestor:scheduler:enqueue", "media:analyze", path);
+			}
+
+		}, FILE_EVENT_THROTTLE);
+	}
+
 
 	function addWatcher(path) {
 		if (path in watchers) {
@@ -115,22 +137,21 @@ function mediaPlugin(nestor) {
 			});
 		}, DIR_UPDATE_THROTTLE);
 
+
 		watcher
 			.on("add", function(changedpath) {
 				markUpdate();
-				logger.debug("Added: %s", changedpath);
-				intents.emit("nestor:scheduler:enqueue", "media:analyze", changedpath);
+				signal("add", changedpath);
 			})
 			.on("change", function(changedpath) {
 				markUpdate();
-				logger.debug("Changed: %s", changedpath);
-				intents.emit("nestor:scheduler:enqueue", "media:analyze", changedpath);
+				signal("change", changedpath);
 			})
 			.on("unlink", function(changedpath) {
 				markUpdate();
-				logger.debug("Removed: %s", changedpath);
-				intents.emit("media:removed", changedpath);
+				signal("unkink", changedpath);
 			});
+
 
 		watchers[path] = watcher;
 	}
@@ -171,7 +192,7 @@ function mediaPlugin(nestor) {
 	/*!
 	 * REST resources
 	 */
-	
+
 	rest.mongoose("watchedDirs", WatchedDir)
 		.set("key", "path");
 
