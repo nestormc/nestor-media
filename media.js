@@ -105,38 +105,38 @@ function mediaPlugin(nestor) {
 
 	// Don't handle changes until there is no change on the same path
 	// for at least FILE_EVENT_THROTTLE millisecs
-	function signal(change, path) {
-		if (path.match(/^\._/)) {
+	function signal(change, changedpath) {
+		if (path.basename(changedpath).match(/^\._/)) {
 			return;
 		}
 
-		if (path in pending) {
-			clearTimeout(pending[path]);
+		if (changedpath in pending) {
+			clearTimeout(pending[changedpath]);
 		}
 
-		pending[path] = setTimeout(function() {
-			delete pending[path];
+		pending[changedpath] = setTimeout(function() {
+			delete pending[changedpath];
 			if (change === "unlink") {
-				intents.emit("media:removed", path);
+				intents.emit("media:removed", changedpath);
 			} else {
-				intents.emit("nestor:scheduler:enqueue", "media:analyze", path);
+				intents.emit("nestor:scheduler:enqueue", "media:analyze", changedpath);
 			}
 
 		}, FILE_EVENT_THROTTLE);
 	}
 
 
-	function addWatcher(path) {
-		if (path in watchers) {
+	function addWatcher(dir) {
+		if (dir in watchers) {
 			return;
 		}
 
-		var watcher = chokidar.watch([path], { persistent: false });
+		var watcher = chokidar.watch([dir], { persistent: false });
 
 		var markUpdate = misc.throttled(function() {
-			WatchedDir.findOneAndUpdate({ path: path }, { lastUpdate: new Date() }, function(err) {
+			WatchedDir.findOneAndUpdate({ path: dir }, { lastUpdate: new Date() }, function(err) {
 				if (err) {
-					logger.warn("Could not update directory %s: %s", path, err.message);
+					logger.warn("Could not update directory %s: %s", dir, err.message);
 				}
 			});
 		}, DIR_UPDATE_THROTTLE);
@@ -157,16 +157,16 @@ function mediaPlugin(nestor) {
 			});
 
 
-		watchers[path] = watcher;
+		watchers[dir] = watcher;
 	}
 
-	function removeWatcher(path) {
-		if (!(path in watchers)) {
+	function removeWatcher(dir) {
+		if (!(dir in watchers)) {
 			return;
 		}
 
-		watchers[path].close();
-		delete watchers[path];
+		watchers[dir].close();
+		delete watchers[dir];
 	}
 
 
