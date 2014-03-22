@@ -68,11 +68,11 @@ function registerProcessors(intents, logger) {
 
 		ffprobe(path, function(err, metadata) {
 			if (err) {
-				logger.error("Cannot ffprobe %s: %s", path, err.message);
-			} else {
-				logger.debug("Dispatching media:file intent for %s", path);
-				intents.emit("media:file", path, data.mime, metadata);
+				metadata = null;
 			}
+
+			logger.debug("Dispatching media:file intent for %s", path);
+			intents.emit("media:file", path, data.mime, metadata);
 
 			d.resolve();
 		});
