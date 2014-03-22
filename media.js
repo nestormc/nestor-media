@@ -106,6 +106,10 @@ function mediaPlugin(nestor) {
 	// Don't handle changes until there is no change on the same path
 	// for at least FILE_EVENT_THROTTLE millisecs
 	function signal(change, path) {
+		if (path.match(/^\._/)) {
+			return;
+		}
+
 		if (path in pending) {
 			clearTimeout(pending[path]);
 		}
