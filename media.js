@@ -5,8 +5,7 @@ var fs = require("fs"),
 	path = require("path"),
 	chokidar = require("chokidar"),
 	ffprobe = require("node-ffprobe"),
-	when = require("when"),
-	spawn = require("child_process").spawn;
+	when = require("when");
 
 
 var DIR_UPDATE_THROTTLE = 2000;
@@ -18,48 +17,7 @@ var FILE_EVENT_THROTTLE = 2000;
  */
 
 function registerProcessors(intents, logger) {
-	function register(op, processor) {
-		intents.emit("nestor:scheduler:register", "media:" + op, processor);
-	}
-
-	function enqueue(op, data) {
-		intents.emit("nestor:scheduler:enqueue", "media:" + op, data);
-	}
-
-	register("analyze", function analyzeFile(path) {
-		logger.debug("Get mimetype for %s", path);
-
-		var mime = "";
-		var child;
-
-		try {
-			child = spawn("file", ["--brief", "--mime-type", path]);
-		} catch(e) {
-			logger.error("Cannot get mimetype for %s: %s", path, e.message);
-			return when.resolve();
-		}
-
-		var d = when.defer();
-
-		child.stdout.on("data", function(data) {
-			mime += data.toString();
-		});
-
-		child.stdout.on("error", function(err) {
-			logger.error("Cannot get mimetype for %s: %s", path, err.message);
-			d.resolve();
-		});
-
-		child.stdout.on("end", function() {
-			logger.debug("Got mimetype %s for %s", mime.trim("\n"), path);
-			enqueue("ffprobe", { path: path, mime: mime.trim("\n") });
-			d.resolve();
-		});
-
-		return d.promise;
-	});
-
-	register("ffprobe", function probeFile(data) {
+	intents.emit("nestor:scheduler:register", "media:ffprobe", function probeFile(data) {
 		var path = data.path;
 
 		logger.debug("Probe %s", path);
@@ -119,7 +77,13 @@ function mediaPlugin(nestor) {
 			if (change === "unlink") {
 				intents.emit("media:removed", changedpath);
 			} else {
-				intents.emit("nestor:scheduler:enqueue", "media:analyze", changedpath);
+				misc.mimetype(changedpath, function(err, path, mimetype) {
+					if (err) {
+						logger.error("Cannot get mimetype for %s: %s", path, err.message);
+					} else {
+						intents.emit("media:ffprobe", { path: path, mime: mimetype });
+					}
+				});
 			}
 
 		}, FILE_EVENT_THROTTLE);
