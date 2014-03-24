@@ -12,34 +12,6 @@ var DIR_UPDATE_THROTTLE = 2000;
 var FILE_EVENT_THROTTLE = 2000;
 
 
-/*!
- * Scheduler processors registering helper
- */
-
-function registerProcessors(intents, logger) {
-	intents.emit("nestor:scheduler:register", "media:ffprobe", function probeFile(data) {
-		var path = data.path;
-
-		logger.debug("Probe %s", path);
-
-		var d = when.defer();
-
-		ffprobe(path, function(err, metadata) {
-			if (err) {
-				metadata = null;
-			}
-
-			logger.debug("Dispatching media:file intent for %s", path);
-			intents.emit("media:file", path, data.mime, metadata);
-
-			d.resolve();
-		});
-
-		return d.promise;
-	});
-}
-
-
 
 /*!
  * Plugin interface
@@ -81,7 +53,7 @@ function mediaPlugin(nestor) {
 					if (err) {
 						logger.error("Cannot get mimetype for %s: %s", path, err.message);
 					} else {
-						intents.emit("media:ffprobe", { path: path, mime: mimetype });
+						intents.emit("nestor:scheduler:enqueue", "media:ffprobe", { path: path, mime: mimetype });
 					}
 				});
 			}
@@ -226,7 +198,27 @@ function mediaPlugin(nestor) {
 			description: "Edit watched media directories"
 		});
 
-		registerProcessors(intents, logger);
+
+		intents.emit("nestor:scheduler:register", "media:ffprobe", function probeFile(data) {
+			var path = data.path;
+
+			logger.debug("Probe %s", path);
+
+			var d = when.defer();
+
+			ffprobe(path, function(err, metadata) {
+				if (err) {
+					metadata = null;
+				}
+
+				logger.debug("Dispatching media:file intent for %s", path);
+				intents.emit("media:file", path, data.mime, metadata);
+
+				d.resolve();
+			});
+
+			return d.promise;
+		});
 
 		// Start watching directories
 		WatchedDir.find({}, function(err, docs) {
