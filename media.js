@@ -89,7 +89,7 @@ function mediaPlugin(nestor) {
 			})
 			.on("unlink", function(changedpath) {
 				markUpdate();
-				signal("unkink", changedpath);
+				signal("unlink", changedpath);
 			});
 
 
