@@ -7,6 +7,10 @@ function(ui, router, resource, moment, ist, wdTemplate, adTemplate) {
 	"use strict";
 
 	ui.started.add(function() {
+		if (!ui.hasRight("watched-dirs")) {
+			return;
+		}
+
 		/* Setup settings pane */
 
 		var wdView = ui.view("watched-dirs");
@@ -114,6 +118,7 @@ function(ui, router, resource, moment, ist, wdTemplate, adTemplate) {
 		css: "media",
 		views: {
 			"watched-dirs": {
+				ifRight: "watched-dirs",
 				type: "settings",
 				title: "Watched directories",
 				description: "Manage watched directories",
