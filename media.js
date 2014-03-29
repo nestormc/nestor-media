@@ -4,7 +4,6 @@
 var fs = require("fs"),
 	path = require("path"),
 	chokidar = require("chokidar"),
-	ffprobe = require("node-ffprobe"),
 	when = require("when");
 
 
@@ -53,7 +52,16 @@ function mediaPlugin(nestor) {
 					if (err) {
 						logger.error("Cannot get mimetype for %s: %s", path, err.message);
 					} else {
-						intents.emit("nestor:scheduler:enqueue", "media:ffprobe", { path: path, mime: mimetype });
+						logger.debug("Probe %s", path);
+
+						misc.ffprobe(path, function(err, p, metadata) {
+							if (err) {
+								metadata = null;
+							}
+
+							logger.debug("Dispatching media:file intent for %s", path);
+							intents.emit("media:file", path, mimetype, metadata);
+						});
 					}
 				});
 			}
@@ -196,28 +204,6 @@ function mediaPlugin(nestor) {
 			name: "watched-dirs",
 			route: "/watchedDirs*",
 			description: "Edit watched media directories"
-		});
-
-
-		intents.emit("nestor:scheduler:register", "media:ffprobe", function probeFile(data) {
-			var path = data.path;
-
-			logger.debug("Probe %s", path);
-
-			var d = when.defer();
-
-			ffprobe(path, function(err, metadata) {
-				if (err) {
-					metadata = null;
-				}
-
-				logger.debug("Dispatching media:file intent for %s", path);
-				intents.emit("media:file", path, data.mime, metadata);
-
-				d.resolve();
-			});
-
-			return d.promise;
 		});
 
 		// Start watching directories
