@@ -7,12 +7,38 @@
 		margin-left: 1em;
 
 		.subdir {
-			&> .loading-indicator {
-				margin-left: 1em;
-				display: none;
+			.entry {
+				&> .loading-indicator {
+					margin-left: 1em;
+					display: none;
+				}
+
+				&> a.unfold {
+					display: inline;
+					margin-left: 0 !important;
+				}
+
+				&> a.fold {
+					display: none;
+					margin-left: 0 !important;
+				}
+
+				&> a.add {
+					display: none;
+					float: right;
+					margin-right: 1em;
+				}
+
+				&:hover {
+					background-color: @xlightGray;
+
+					&> a.add {
+						display: inline;
+					}
+				}
 			}
 
-			&.loading > .loading-indicator {
+			&.loading > .entry > .loading-indicator {
 				display: inline;
 			}
 
@@ -20,41 +46,19 @@
 				display: none;
 			}
 
-			&> a.unfold {
-				display: inline;
-				margin-left: 0 !important;
-			}
-
-			&> a.fold {
-				display: none;
-				margin-left: 0 !important;
-			}
-
-			&> a.add {
-				display: none;
-				float: right;
-				margin-right: 1em;
-			}
-
-			&:hover {
-				background-color: @xlightGray;
-
-				&> a.add {
-					display: inline;
-				}
-			}
-
 			&.expanded {
 				&> .subdir-list {
 					display: block;
 				}
 
-				&> a.unfold {
-					display: none;
-				}
+				.entry {
+					&> a.unfold {
+						display: none;
+					}
 
-				&> a.fold {
-					display: inline;
+					&> a.fold {
+						display: inline;
+					}
 				}
 			}
 		}
