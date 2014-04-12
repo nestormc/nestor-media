@@ -11,5 +11,5 @@ ul.content-list
 
 			.list-item-actions
 				a.action-with-icon[title=Remove directory][href={{ uri("#!media/remove-directory/%s", path) }}]
-					@svg "images/cancel.svg"
+					@icon "cancel"
 					"Remove directory"

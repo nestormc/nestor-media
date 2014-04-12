@@ -4,15 +4,15 @@
 			li.subdir[data-path={{ path }}]
 				.entry
 					a.action-with-icon.add[href=#!media/add-directory/{{ encodeURIComponent(path) }}]
-						@svg "images/add.svg"
+						@icon "add"
 						"Add"
 
 					a.action-with-icon.unfold[href=#!media/walk/{{ encodeURIComponent(path) }}]
-						@svg "images/folded.svg"
+						@icon "folded"
 						"{{ name }}"
 
 					a.action-with-icon.fold[href=#!media/walk/{{ encodeURIComponent(path) }}]
-						@svg "images/unfolded.svg"
+						@icon "unfolded"
 						"{{ name }}"
 
 					span.loading-indicator " ..."

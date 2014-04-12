@@ -1,5 +1,6 @@
 .dir-list {
 	height: 20em;
+	width: 20em;
 	overflow-y: auto;
 
 	.subdir-list {
@@ -7,7 +8,7 @@
 		margin-left: 1em;
 
 		.subdir {
-			.entry {
+			&> .entry {
 				&> .loading-indicator {
 					margin-left: 1em;
 					display: none;
@@ -51,7 +52,7 @@
 					display: block;
 				}
 
-				.entry {
+				&> .entry {
 					&> a.unfold {
 						display: none;
 					}
