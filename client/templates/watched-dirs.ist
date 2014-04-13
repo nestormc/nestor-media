@@ -3,13 +3,13 @@ ul.content-list
 		"No watched directories"
 	@each dirs
 		li.list-item
-			.list-item-status
-				"Last updated {{ lastUpdate }}"
-
-			.list-item-description
+			.list-item-head
 				.list-item-title "{{ path }}"
+				.list-item-status
+					"Last updated {{ lastUpdate }}"
 
-			.list-item-actions
-				a.action-with-icon[title=Remove directory][href={{ uri("#!media/remove-directory/%s", path) }}]
-					@icon "cancel"
-					"Remove directory"
+			.list-item-body
+				.list-item-actions
+					a.action-with-icon[title=Remove directory][href={{ uri("#!media/remove-directory/%s", path) }}]
+						@icon "cancel"
+						"Remove directory"
