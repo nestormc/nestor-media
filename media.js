@@ -56,6 +56,7 @@ function mediaPlugin(nestor) {
 
 						misc.ffprobe(path, function(err, p, metadata) {
 							if (err) {
+								logger.debug("No ffprobe metadata for %s", path);
 								metadata = null;
 							}
 
